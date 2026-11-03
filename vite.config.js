@@ -10,4 +10,8 @@ export default defineConfig({
       '/ws': { target: 'ws://localhost:3001', ws: true },
     },
   },
+  // Permite demonstrar o build por um túnel do ngrok (npm run preview).
+  preview: {
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app'],
+  },
 });

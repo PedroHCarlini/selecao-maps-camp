@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import ActionOverlay from '../components/ActionOverlay.jsx';
+import FinalSummary from '../components/FinalSummary.jsx';
+import SeriesReveal from '../components/SeriesReveal.jsx';
 import { useRoom } from '../useRoom.js';
 
 const SIDES = { attack: 'Ataque', defense: 'Defesa' };
@@ -10,6 +13,8 @@ export default function Room({ roomId, token }) {
   const [selection, setSelection] = useState(null);
   const [submittedStep, setSubmittedStep] = useState(null);
   const [toast, setToast] = useState(null);
+  const [seriesOpen, setSeriesOpen] = useState(false);
+  const openSeries = useCallback(() => setSeriesOpen(true), []);
 
   const stepIndex = state?.veto.stepIndex;
 
@@ -85,21 +90,38 @@ export default function Room({ roomId, token }) {
           />
         )}
 
-        <MapGrid
-          veto={veto}
-          images={state.images}
-          nameOf={nameOf}
-          status={status}
-          selectable={canAct && veto.current?.type !== 'side'}
-          actionType={veto.current?.type}
-          selected={selection?.map}
-          onSelect={(map) => setSelection({ map })}
-        />
+        {status === 'done' ? (
+          <FinalSummary
+            veto={veto}
+            images={state.images}
+            nameOf={nameOf}
+            formatLabel={state.formatLabel}
+            onReplay={openSeries}
+          >
+            <TimelineList veto={veto} nameOf={nameOf} />
+          </FinalSummary>
+        ) : (
+          <>
+            <MapGrid
+              veto={veto}
+              images={state.images}
+              nameOf={nameOf}
+              status={status}
+              selectable={canAct && veto.current?.type !== 'side'}
+              actionType={veto.current?.type}
+              selected={selection?.map}
+              onSelect={(map) => setSelection({ map })}
+            />
 
-        <div className="room-columns">
-          <SeriesPanel veto={veto} nameOf={nameOf} />
-          <Timeline veto={veto} nameOf={nameOf} />
-        </div>
+            <div className="room-columns">
+              <SeriesPanel veto={veto} nameOf={nameOf} />
+              <section className="panel">
+                <h2>Sequência</h2>
+                <TimelineList veto={veto} nameOf={nameOf} />
+              </section>
+            </div>
+          </>
+        )}
 
         {role === 'admin' && <AdminPanel state={state} tokens={tokens} roomId={roomId} send={send} online={online} />}
         {role !== 'admin' && role !== 'spectator' && <p className="role-note">Você é capitão de <b>{nameOf(role)}</b>. Não compartilhe este link.</p>}
@@ -120,6 +142,24 @@ export default function Room({ roomId, token }) {
             </button>
           </div>
         </div>
+      )}
+
+      <ActionOverlay
+        log={veto.log}
+        done={veto.done}
+        images={state.images}
+        teams={teams}
+        onVetoFinished={openSeries}
+      />
+
+      {seriesOpen && status === 'done' && (
+        <SeriesReveal
+          series={veto.series}
+          images={state.images}
+          teams={teams}
+          formatLabel={state.formatLabel}
+          onClose={() => setSeriesOpen(false)}
+        />
       )}
 
       {toast && <div className="toast" role="alert">{toast}</div>}
@@ -299,28 +339,25 @@ function SeriesPanel({ veto, nameOf }) {
   );
 }
 
-function Timeline({ veto, nameOf }) {
+function TimelineList({ veto, nameOf }) {
   let logIndex = 0;
   return (
-    <section className="panel">
-      <h2>Sequência</h2>
-      <ol className="timeline">
-        {veto.steps.map((step, index) => {
-          const entry = index < veto.stepIndex ? veto.log[logIndex++] : null;
-          const state = index < veto.stepIndex ? 'done' : index === veto.stepIndex ? 'current' : 'next';
-          return (
-            <li key={index} className={`tl-${state} tl-${step.type}`} aria-current={state === 'current' ? 'step' : undefined}>
-              <span className="tl-type">{STEP_LABEL[step.type]}</span>
-              <span className="tl-team">{step.team ? nameOf(step.team) : 'Automático'}</span>
-              <span className="tl-result">
-                {entry && (entry.type === 'side' ? `${entry.map}: ${SIDES[entry.side]}` : entry.map)}
-                {entry?.auto && <em> (tempo esgotado)</em>}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
+    <ol className="timeline">
+      {veto.steps.map((step, index) => {
+        const entry = index < veto.stepIndex ? veto.log[logIndex++] : null;
+        const state = index < veto.stepIndex ? 'done' : index === veto.stepIndex ? 'current' : 'next';
+        return (
+          <li key={index} className={`tl-${state} tl-${step.type}`} aria-current={state === 'current' ? 'step' : undefined}>
+            <span className="tl-type">{STEP_LABEL[step.type]}</span>
+            <span className="tl-team">{step.team ? nameOf(step.team) : 'Automático'}</span>
+            <span className="tl-result">
+              {entry && (entry.type === 'side' ? `${entry.map}: ${SIDES[entry.side]}` : entry.map)}
+              {entry?.auto && <em> (tempo esgotado)</em>}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
