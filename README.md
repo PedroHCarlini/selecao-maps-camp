@@ -23,6 +23,8 @@ Abra http://localhost:5173, crie a sala e envie os links que aparecem no painel 
 
 Quem perde a conexão volta sozinho e recebe o estado atual. O link do capitão funciona como senha, então não deve ser compartilhado.
 
+O código do link sai da barra de endereços assim que a sala abre e fica guardado só naquela aba. Recarregar mantém o acesso. Depois de fechar a aba, é preciso abrir o link original de novo. Abra links com código fora da área transmitida, porque o endereço aparece até a página carregar.
+
 A ordem do veto, os mapas e o pool sugerido são definidos no backend.
 
 ## Sons

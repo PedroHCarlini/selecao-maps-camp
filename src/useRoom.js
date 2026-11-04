@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { wsUrl } from './backend.js';
+import { clearRoomToken } from './roomToken.js';
 
 const MAX_BACKOFF_MS = 5000;
 
@@ -41,6 +42,8 @@ export function useRoom(roomId, token) {
           setError({ message: message.message, at: Date.now() });
         } else if (message.type === 'fatal') {
           stopped = true;
+          // Um código recusado não pode ficar guardado, senão o link de espectador também falharia nesta aba.
+          clearRoomToken(roomId);
           setFatal(message.message);
           ws.close();
         }

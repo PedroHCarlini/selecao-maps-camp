@@ -406,6 +406,7 @@ function AdminPanel({ state, tokens, roomId, send, online }) {
           <CopyLink key={link.label} {...link} />
         ))}
       </ul>
+      <p className="hint">Guarde o link da organização fora da tela da live. Se fechar esta aba, é ele que devolve o seu acesso.</p>
     </section>
   );
 }

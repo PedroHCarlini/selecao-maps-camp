@@ -2,11 +2,23 @@ import { useCallback, useEffect, useState } from 'react';
 import RoomIntro from './components/RoomIntro.jsx';
 import CreateRoom from './pages/CreateRoom.jsx';
 import Room from './pages/Room.jsx';
+import { readRoomToken, saveRoomToken } from './roomToken.js';
 
-// O token do link fica no hash (/sala/ID#TOKEN), que não é enviado em requisições nem no Referer.
+const roomPath = (roomId) => `/sala/${roomId}`;
+
+// O link traz o token no hash (/sala/ID#TOKEN), que não é enviado em requisições nem no Referer.
+// Ele sai da barra de endereços assim que é lido, para não vazar em uma transmissão de tela.
+// Se a aba não puder guardá-lo, continua no endereço: é melhor do que perder o acesso ao recarregar.
 function readLocation() {
   const match = window.location.pathname.match(/^\/sala\/([\w-]+)\/?$/);
-  return match ? { roomId: match[1], token: window.location.hash.slice(1) } : { roomId: null, token: '' };
+  if (!match) return { roomId: null, token: '' };
+
+  const roomId = match[1];
+  const linkToken = window.location.hash.slice(1);
+  if (!linkToken) return { roomId, token: readRoomToken(roomId) };
+
+  if (saveRoomToken(roomId, linkToken)) window.history.replaceState(window.history.state, '', roomPath(roomId));
+  return { roomId, token: linkToken };
 }
 
 export default function App() {
@@ -28,7 +40,8 @@ export default function App() {
     return (
       <CreateRoom
         onCreated={({ id, adminToken }) => {
-          window.history.pushState(null, '', `/sala/${id}#${adminToken}`);
+          const saved = saveRoomToken(id, adminToken);
+          window.history.pushState(null, '', saved ? roomPath(id) : `${roomPath(id)}#${adminToken}`);
           window.scrollTo(0, 0);
           setShowIntro(true);
           setLocation(readLocation());
