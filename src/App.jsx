@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import RoomIntro from './components/RoomIntro.jsx';
 import CreateRoom from './pages/CreateRoom.jsx';
 import Room from './pages/Room.jsx';
 
@@ -10,6 +11,8 @@ function readLocation() {
 
 export default function App() {
   const [location, setLocation] = useState(readLocation);
+  const [showIntro, setShowIntro] = useState(false);
+  const closeIntro = useCallback(() => setShowIntro(false), []);
 
   useEffect(() => {
     const update = () => setLocation(readLocation());
@@ -26,10 +29,17 @@ export default function App() {
       <CreateRoom
         onCreated={({ id, adminToken }) => {
           window.history.pushState(null, '', `/sala/${id}#${adminToken}`);
+          window.scrollTo(0, 0);
+          setShowIntro(true);
           setLocation(readLocation());
         }}
       />
     );
   }
-  return <Room key={`${location.roomId}#${location.token}`} roomId={location.roomId} token={location.token} />;
+  return (
+    <>
+      <Room key={`${location.roomId}#${location.token}`} roomId={location.roomId} token={location.token} />
+      {showIntro && <RoomIntro onDone={closeIntro} />}
+    </>
+  );
 }

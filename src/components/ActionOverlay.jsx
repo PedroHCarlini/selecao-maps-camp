@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playActionSound } from '../sound.js';
 
 const DURATION_MS = { ban: 2600, pick: 2400, decider: 2400, side: 2600 };
 const SIDES = { attack: 'Ataque', defense: 'Defesa' };
@@ -20,7 +21,10 @@ function useActionQueue(log, done, onVetoFinished) {
     if (log.length < previous) {
       setQueue([]);
       setFinishing(false);
-    } else if (log.length > previous && !prefersReducedMotion()) {
+    } else if (log.length > previous && prefersReducedMotion()) {
+      // Sem animação na fila, o som toca aqui. Movimento reduzido não significa sem áudio.
+      playActionSound(log.at(-1).type);
+    } else if (log.length > previous) {
       const added = log
         .map((entry, index) => ({ ...entry, id: index }))
         .slice(previous)
@@ -128,6 +132,13 @@ const EFFECTS = { ban: BanEffect, pick: RevealEffect, decider: RevealEffect, sid
 // Só visual: não recebe cliques, e o título da sala já anuncia a mudança para leitores de tela.
 export default function ActionOverlay({ log, done, images, teams, onVetoFinished }) {
   const entry = useActionQueue(log, done, onVetoFinished);
+  const entryId = entry?.id;
+  const entryType = entry?.type;
+
+  useEffect(() => {
+    if (entryId !== undefined) playActionSound(entryType);
+  }, [entryId, entryType]);
+
   if (!entry) return null;
   const Effect = EFFECTS[entry.type];
   return (

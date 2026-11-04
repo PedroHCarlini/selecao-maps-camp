@@ -1,6 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { playRevealHits } from '../sound.js';
 
 const SIDES = { attack: 'Ataque', defense: 'Defesa' };
+const CARD_FIRST_MS = 650;
+const CARD_STEP_MS = 800;
+// A carta acelera logo no início da entrada, então o som cai um pouco depois de ela começar.
+const HIT_AFTER_CARD_MS = 100;
 
 // O <dialog> nativo já cuida do foco e de fechar com Esc.
 export default function SeriesReveal({ series, images, teams, formatLabel, onClose }) {
@@ -10,12 +15,22 @@ export default function SeriesReveal({ series, images, teams, formatLabel, onClo
     if (!dialog.current.open) dialog.current.showModal();
   }, []);
 
+  const mapCount = series.length;
+  useEffect(() => {
+    // Sem animação, as cartas aparecem juntas: um único "TUM" basta.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delays = reduced
+      ? [0]
+      : Array.from({ length: mapCount }, (_, index) => CARD_FIRST_MS + index * CARD_STEP_MS + HIT_AFTER_CARD_MS);
+    return playRevealHits(delays);
+  }, [mapCount]);
+
   return (
     <dialog
       ref={dialog}
       className="series-reveal"
       aria-label={`Mapas da série, ${formatLabel}`}
-      style={{ '--count': series.length }}
+      style={{ '--count': series.length, '--card-first': `${CARD_FIRST_MS}ms`, '--card-step': `${CARD_STEP_MS}ms` }}
       onClose={onClose}
     >
       <header className="sr-head">

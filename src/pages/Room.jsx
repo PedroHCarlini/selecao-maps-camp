@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import ActionOverlay from '../components/ActionOverlay.jsx';
 import FinalSummary from '../components/FinalSummary.jsx';
 import SeriesReveal from '../components/SeriesReveal.jsx';
+import SoundToggle from '../components/SoundToggle.jsx';
 import { useRoom } from '../useRoom.js';
 
 const SIDES = { attack: 'Ataque', defense: 'Defesa' };
@@ -129,7 +130,7 @@ export default function Room({ roomId, token }) {
       </main>
 
       {myTurn && selection && (
-        <div className="confirm-bar">
+        <div className={`confirm-bar confirm-${veto.current.type}`}>
           <p>
             {veto.current.type === 'side'
               ? <>Começar em <b>{SIDES[selection.side]}</b> na {veto.sideTarget}?</>
@@ -161,6 +162,8 @@ export default function Room({ roomId, token }) {
           onClose={() => setSeriesOpen(false)}
         />
       )}
+
+      <SoundToggle />
 
       {toast && <div className="toast" role="alert">{toast}</div>}
     </div>
@@ -226,7 +229,7 @@ function TurnBanner({ state, myTurn, nameOf }) {
     title = type === 'side'
       ? `Sua vez: escolha o lado em ${veto.sideTarget}`
       : `Sua vez: ${ACTION_VERB[type]} um mapa`;
-    tone = 'mine';
+    tone = type === 'side' ? 'mine' : type;
   } else {
     const type = veto.current.type;
     const team = nameOf(veto.current.team);
@@ -407,22 +410,54 @@ function AdminPanel({ state, tokens, roomId, send, online }) {
   );
 }
 
+// O link começa oculto para não vazar se a organização estiver transmitindo a tela.
 function CopyLink({ label, url }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const [visible, setVisible] = useState(false);
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
+      setCopyFailed(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      window.prompt('Copie o link:', url);
+      setCopyFailed(true);
     }
   }
   return (
     <li>
       <span>{label}</span>
-      <input readOnly value={url} onFocus={(e) => e.target.select()} aria-label={`Link: ${label}`} />
+      <div className="link-field">
+        <input
+          readOnly
+          value={visible ? url : '•'.repeat(32)}
+          onFocus={(e) => visible && e.target.select()}
+          aria-label={visible ? `Link: ${label}` : `Link oculto: ${label}`}
+        />
+        <button
+          type="button"
+          className="link-eye"
+          onClick={() => setVisible((v) => !v)}
+          aria-pressed={visible}
+          aria-label={`${visible ? 'Ocultar' : 'Mostrar'} link: ${label}`}
+          title={visible ? 'Ocultar link' : 'Mostrar link'}
+        >
+          <EyeIcon open={visible} />
+        </button>
+      </div>
       <button className="ghost" onClick={copy}>{copied ? 'Copiado' : 'Copiar'}</button>
+      {copyFailed && <p className="hint link-error" role="status">Não foi possível copiar. Clique no olho para ver o link.</p>}
     </li>
+  );
+}
+
+function EyeIcon({ open }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+      {!open && <path d="M4 4l16 16" />}
+    </svg>
   );
 }

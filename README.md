@@ -25,6 +25,10 @@ Quem perde a conexão volta sozinho e recebe o estado atual. O link do capitão 
 
 A ordem do veto, os mapas e o pool sugerido são definidos no backend.
 
+## Sons
+
+Ban, pick (inclusive o decider) e a entrada de cada mapa da série tocam um som sintetizado no navegador. Para usar seus próprios áudios, coloque `ban.mp3`, `pick.mp3` e `reveal.mp3` em `public/sounds/`. Use apenas arquivos que você tem permissão para usar.
+
 ## Publicar
 
 ```bash
